@@ -43,7 +43,7 @@ def use_model():
     # print(X.head())
     # y = dataset.iloc[ : , 14 ].values
     y_pred = loaded_model.predict(X[0:1])
-    print(y_pred[0])
+    print(y_pred)
 
 def call_from_api(loc1, truck1 , hand1 ):
     dataset = pd.read_csv('real_data.csv')
@@ -64,5 +64,5 @@ def call_from_api(loc1, truck1 , hand1 ):
     
 if __name__ == '__main__':
     # create_model();
-    # use_model()
-    call_from_api(2 , 1 , 0)
+    use_model()
+    # call_from_api(2 , 1 , 0)
