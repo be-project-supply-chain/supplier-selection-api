@@ -57,13 +57,69 @@ def index():
 @app.route('/db/fetch_orders_all',methods=['GET'])
 def index1():
     cur = mysql.connection.cursor()
-    cur.execute("SELECT * FROM orders")
+    cur.execute("SELECT * FROM orders o where o.oid NOT IN(SELECT p.oid from order_map_and_status p  )")
     row_headers=[x[0] for x in cur.description] #this will extract row headers
     rv = cur.fetchall()
     json_data=[]
     for result in rv:
         json_data.append(dict(zip(row_headers,result)))
     return json.dumps(json_data)
+
+@app.route('/db/map_order',methods=['POST'])
+def index2():
+    data=request.json
+    oid=data["oid"]
+    sid=data["sid"]
+    order_status=data["order_status"]
+    cur = mysql.connection.cursor()
+    cur.execute("INSERT INTO order_map_and_status (oid, sid, order_status) VALUES ( %s , %s , %s)", (oid,sid, order_status))
+    mysql.connection.commit()
+    cur.close()
+    return jsonify('success')
+
+@app.route('/db/trace_order_4pl',methods=['GET'])
+def index3():
+    cur = mysql.connection.cursor()
+    cur.execute("SELECT o.oid, p.sid , o.location, o.totalamount, o.type, o.weight, o.deliveryMode ,p.order_status FROM orders o , order_map_and_status p where o.oid = p.oid ")
+    row_headers=[x[0] for x in cur.description] #this will extract row headers
+    rv = cur.fetchall()
+    json_data=[]
+    for result in rv:
+        json_data.append(dict(zip(row_headers,result)))
+    return json.dumps(json_data)
+
+@app.route('/db/trace_order_customer',methods=['GET'])
+def index4():
+    cur = mysql.connection.cursor()
+    cur.execute("SELECT o.oid , o.location, o.totalamount, o.type, o.weight, o.deliveryMode ,p.order_status FROM orders o , order_map_and_status p where o.oid = p.oid ")
+    row_headers=[x[0] for x in cur.description] 
+    rv = cur.fetchall()
+    # print(rv)
+    json_data=[]
+    for result in rv:
+        json_data.append(dict(zip(row_headers,result)))
+
+    cur = mysql.connection.cursor()
+    cur.execute("SELECT o.oid , o.location, o.totalamount, o.type, o.weight, o.deliveryMode  FROM orders o where o.oid NOT IN (SELECT p.oid from order_map_and_status p)")
+    row_headers=[x[0] for x in cur.description]
+    row_headers.append("order_status")
+    row_headers.append("sid")
+    rv = cur.fetchall()
+    t=()
+    # print(type(rv))
+    for r in rv:
+        print(r)
+        r = r + ( 0,)
+        t = r + (-1,)
+        # print(r)
+    print(t)
+    for result in rv:
+        json_data.append(dict(zip(row_headers,result)))
+    
+    return json.dumps(json_data)
+    # return("success")
+    
+    
 
 
 @app.route('/', methods=['GET'])
