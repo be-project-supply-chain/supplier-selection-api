@@ -5,7 +5,7 @@ from sample_model import load_model
 from new_model import call_from_api
 import json
 from flask_mysqldb import MySQL 
-
+from fuzzy import output
 app = flask.Flask(__name__)
 app.config["DEBUG"] = True
 CORS(app)
@@ -119,6 +119,63 @@ def index4():
     return json.dumps(json_data)
     # return("success")
     
+@app.route('/db/process_order_3pl', methods=['GET','POST'])
+def index5():
+    data=request.json
+    # print(data)
+    sid=data["sid"]
+    # print(sid)
+    cur = mysql.connection.cursor()
+    cur.execute("SELECT * FROM orders o where o.oid IN ( SELECT p.oid from order_map_and_status p where p.sid = %s and order_status=1 )",(sid,))
+    row_headers=[x[0] for x in cur.description] #this will extract row headers
+    rv = cur.fetchall()
+    json_data=[]
+    for result in rv:
+        json_data.append(dict(zip(row_headers,result)))
+    return json.dumps(json_data)
+
+@app.route('/db/order_delivery_complete_3pl', methods=['GET','POST'])
+def index20():
+    data=request.json
+    # print(data)
+    sid=data["sid"]
+    # print(sid)
+    cur = mysql.connection.cursor()
+    cur.execute("SELECT * FROM orders o where o.oid IN ( SELECT p.oid from order_map_and_status p where p.sid = %s and order_status=2 )",(sid,))
+    row_headers=[x[0] for x in cur.description] #this will extract row headers
+    rv = cur.fetchall()
+    json_data=[]
+    for result in rv:
+        json_data.append(dict(zip(row_headers,result)))
+    return json.dumps(json_data)
+
+@app.route('/db/process_to_dispatched',methods=['GET','POST'])
+def index8():
+    data=request.json
+    # print(data)
+    oid=data["oid"]
+    # print(sid)
+    cur = mysql.connection.cursor()
+    cur.execute("UPDATE order_map_and_status  SET order_status  = 2 WHERE oid = %s",(oid,))
+    mysql.connection.commit()
+    cur.close()
+    return jsonify("success")
+
+@app.route('/db/dispatched_to_deliver',methods=['GET','POST'])
+def index9():
+    data=request.json
+    # print(data)
+    oid=data["oid"]
+    # print(sid)
+    cur = mysql.connection.cursor()
+    cur.execute("UPDATE order_map_and_status  SET order_status  = 3 WHERE oid = %s",(oid,))
+    mysql.connection.commit()
+    cur.close()
+    return jsonify("success")
+
+
+    
+
     
 
 
@@ -143,7 +200,20 @@ def abc():
     # print(out)
     # print(dataDict["location"])
     return out
-    
+
+@app.route('/fuzzy', methods= ['GET','POST'] )
+def index6():
+    data=request.json
+    print(data)
+    experience=data["experience"]
+    timeliness=data["timeliness"]
+    support=data["support"]
+    interaction=data["interaction"]
+    quality=data["quality"]
+    trouble=data["trouble"]
+
+    l=output(experience,timeliness,support,interaction,quality,trouble)
+    return jsonify(l)
 
 if __name__ == '__main__':
     app.run(debug=True)
